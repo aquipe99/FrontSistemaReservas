@@ -42,7 +42,7 @@ export class AppMenu {
         return nodes.map(node => ({
             label: node.description,
             icon: node.icon?.startsWith('pi') ? node.icon : undefined,
-            iconClass: node.icon,  // 👈 ESTE ES EL TRUCO!
+            iconClass: node.icon,  
             routerLink: node.link ? [node.link] : undefined,
             items: node.items && node.items.length > 0
                 ? this.mapBackendToPrimeNg(node.items)

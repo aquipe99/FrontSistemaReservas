@@ -20,7 +20,13 @@ export const routes: Routes = [
           path: 'inicio',
           loadComponent: () =>
             import('./pages/inicio/inicio').then(m => m.Inicio)
-        }
+        },
+        {
+          path: 'MetodoPago',
+          loadComponent: () =>
+            import('./pages/payment-method/payment-method').then(m => m.PaymentMethodComponent)
+        },
+        
       ]
     }
 
