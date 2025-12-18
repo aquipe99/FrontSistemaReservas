@@ -35,7 +35,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         messageService.add({
           severity: 'warn',
           summary: 'Sesión expirada',
-          detail: 'Por favor inicia sesión nuevamente'
+          detail: 'Por favor inicia sesión nuevamente',
+          life: 4000
         });
         auth.logout();
         router.navigate(['/login']);
@@ -44,15 +45,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         // 🔐 Token inválido o expirado      
         messageService.add({
           severity: 'warn',
-          summary: 'Sesión expirada',
-          detail: 'Tu sesión ha expirado, vuelve a iniciar sesión',
-          life: 3000000
-        });
-        debugger;
-        auth.logout();
-        setTimeout(() => {
-          router.navigate(['/login']);
-        }, 1000);
+          summary: 'No autorizado',
+          detail: 'No tiene permisos para realizar esta accion',
+          life: 4000
+        }); 
+    /*     auth.logout();
+        router.navigate(['/unauthorized']);   */     
       }
 
       return throwError(() => error);

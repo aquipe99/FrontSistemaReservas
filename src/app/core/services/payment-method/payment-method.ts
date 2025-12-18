@@ -26,11 +26,7 @@ export class PaymentMethod {
       .set('sortField', sortField ?? '')
       .set('sortOrder', sortOrder ?? '')
       .set('globalFilter', globalFilter ?? '');
-
-    /*   if (sortField) params = params.set('sortField', sortField);
-      if (sortOrder) params = params.set('sortOrder', sortOrder);
-      if (globalFilter) params = params.set('globalFilter', globalFilter); */
-      debugger;
+  
       return this.http.get<ApiResponse<PageResponse<PaymentMethodRequest>>>(
         
         this.apiUrl,
@@ -44,6 +40,7 @@ export class PaymentMethod {
     }
 
     update(id: number, data: PaymentMethodRequest) {
+     
         return this.http.put<ApiResponse<PaymentMethodRequest>>(
           `${this.apiUrl}/${id}`,
           data

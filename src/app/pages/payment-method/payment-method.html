@@ -61,7 +61,10 @@
                     </td>
                     <td>
                         <p-button icon="pi pi-pencil" label="Editar" class="mr-2" [rounded]="true" [outlined]="true" (click)="edit(paymentMethod)" />
-                        <p-button icon="pi pi-trash" label="Eliminar" severity="danger" [rounded]="true" [outlined]="true" (click)="remove(paymentMethod)" />
+                        @if (canDelete()) {
+                              <p-button  icon="pi pi-trash" label="Eliminar" severity="danger" [rounded]="true" [outlined]="true" (click)="remove(paymentMethod)" />
+                        }
+                      
                     </td>
                 </tr>
             </ng-template>
@@ -74,11 +77,17 @@
                         <label for="name" class="block font-bold mb-3">Nombre</label>
                         <input type="text" pInputText id="name" [(ngModel)]="paymentMethod.name" required autofocus fluid />
                         <small class="text-red-500" *ngIf="submitted && !paymentMethod.name">Name is required.</small>
-                    </div>      
-
-                    <div>
-                        <label for="inventoryStatus" class="block font-bold mb-3">Status</label>
-                        <p-select [(ngModel)]="paymentMethod.status" inputId="inventoryStatus"  optionLabel="label" optionValue="label" placeholder="Select a Status" fluid />
+                    </div> 
+                    <div class="font-bold mb-3">Estado</div>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex items-center">
+                            <p-radiobutton id="option1" name="option" [value]="true" [(ngModel)]="paymentMethod.status" />
+                            <label for="option1" class="leading-none ml-2">ACTIVO</label>
+                        </div>
+                        <div class="flex items-center">
+                            <p-radiobutton id="option2" name="option" [value]="false" [(ngModel)]="paymentMethod.status" />
+                            <label for="option2" class="leading-none ml-2">INACTIVO</label>
+                        </div>                   
                     </div>
                 </div>
             </ng-template>

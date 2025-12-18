@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild } from '@angular/core';
+import { Component, effect, signal, ViewChild } from '@angular/core';
 import { ConfirmationService, LazyLoadEvent, MessageService } from 'primeng/api';
 import { Table, TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { CommonModule } from '@angular/common';
@@ -22,17 +22,7 @@ import { BreadcrumbModule } from 'primeng/breadcrumb';
 import { Product, ProductService } from '../../core/models/productos-service-prueba';
 import { PaymentMethodRequest } from '../../core/models/paymentmethod-Request';
 import { PaymentMethod } from '../../core/services/payment-method/payment-method';
-
-/* interface Column {
-    field: string;
-    header: string;
-    customExportHeader?: string;
-}
-
-interface ExportColumn {
-    title: string;
-    dataKey: string;
-} */
+import { Auth } from '../../core/services/auth/auth';
 
 @Component({
   selector: 'app-payment-method',
@@ -64,6 +54,22 @@ interface ExportColumn {
 
 
 export class PaymentMethodComponent {
+    
+    ngOnInit(){
+        if(this.auth.token){
+            this.auth.refreshPermissions().subscribe({
+                next: () => {
+                    debugger;    
+                    if(this.dt){
+                        this.dt.reset();
+                    }
+                },
+                error: (err) => {
+                    this.toast('Ocurrió un error al eliminar', 'error');
+                }
+            });
+        }
+    }
 
     breadcrumbHome = { icon: 'pi pi-home', to: '/' };
     breadcrumbItems = [
@@ -83,14 +89,48 @@ export class PaymentMethodComponent {
     dialogVisible = false;
     submitted = false;
     
-
+    canDeleteSignal = signal(false);
 
     constructor(
+        private auth:Auth,
         private service: PaymentMethod,
         private messageService: MessageService,
         private confirmationService: ConfirmationService
-    ) {}
+    ) {
+        effect(() => {
+            const user = this.auth.userSignal();
+            if (!user?.menus) {
+                this.canDeleteSignal.set(false);
+                return;
+            }
+            debugger;
+            const menu = findMenuByLink(user.menus, '/MetodoPago');
+            this.canDeleteSignal.set(!!menu?.canDelete);
+        });
+    }
 
+    canCreate(): boolean {
+        return this.hasPermission('MetodoPago', 'canCreate');
+    }
+
+    canUpdate(): boolean {
+        return this.hasPermission('MetodoPago', 'canUpdate');
+    }
+
+    canDelete(): boolean {        
+        return this.canDeleteSignal();  
+    }
+
+    private hasPermission(
+    routePath: string,
+    permission: 'canRead' | 'canCreate' | 'canUpdate' | 'canDelete'
+    ): boolean {
+        const user = this.auth.userSignal();
+        if (!user?.menus) return false;        
+        const menu = findMenuByLink(user.menus, `/${routePath}`);
+        return !!menu?.[permission];
+    }
+    
     load(event: TableLazyLoadEvent) {
 
     this.loading = true;
@@ -142,7 +182,7 @@ export class PaymentMethodComponent {
         this.dialogVisible = true;
     }
 
-    update() {
+    update() {       
         this.service.update(this.paymentMethod.id!, this.paymentMethod).subscribe(() => {
         this.dialogVisible = false;
         this.dt.reset();
@@ -151,28 +191,55 @@ export class PaymentMethodComponent {
     }
 
 
-    remove(pm: PaymentMethodRequest) {
-        this.confirmationService.confirm({
+remove(pm: PaymentMethodRequest) {
+    this.confirmationService.confirm({
         message: `¿Eliminar "${pm.name}"?`,
         accept: () => {
-            this.service.delete(pm.id!).subscribe(() => {
-            this.dt.reset();
-            this.toast('Eliminado correctamente');
+            this.service.delete(pm.id!).subscribe({
+                next: () => {                    
+                    this.dt.reset();
+                    this.toast('Eliminado correctamente', 'success');
+                },
+                error: (err) => {                                 
+                    if (err.status === 403) {
+                        this.toast('No tienes permisos para eliminar este método de pago', 'error');
+                    }                     
+                    else if (err.status === 404) {
+                        this.toast('Registro no encontrado', 'warn');
+                    } 
+                    else {
+                        this.toast('Ocurrió un error al eliminar', 'error');
+                    }
+                }
             });
         }
-        });
-    }
-
-    toast(detail: string) {
-        this.messageService.add({
-        severity: 'success',
-        summary: 'OK',
-        detail,
-        life: 3000
-        });
-    }
+    });
 }
 
+    toast(detail: string, severity: 'success' | 'error' | 'warn' = 'success') {
+        this.messageService.add({
+            severity,
+            summary: severity === 'success' ? 'OK' : 'Error',
+            detail,
+            life: 3000
+        });
+    }
+
+    
+}
+function findMenuByLink(menus: any[], link: string): any | null {
+  for (const menu of menus) {
+    if (menu.link?.toLowerCase() === link.toLowerCase()) {
+      return menu;
+    }
+
+    if (menu.items?.length) {
+      const found = findMenuByLink(menu.items, link);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
    
 
