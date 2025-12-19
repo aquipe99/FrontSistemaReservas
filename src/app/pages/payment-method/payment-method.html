@@ -1,4 +1,4 @@
-        
+       
         <div class="card">            
             <p-breadcrumb [model]="breadcrumbItems" [home]="breadcrumbHome"></p-breadcrumb>
         </div>
@@ -8,7 +8,9 @@
                <div class="font-semibold text-xl">Metodos de Pago</div>        
             </ng-template>
             <ng-template #end>
-                <p-button label="Nuevo Metodo de Pago" icon="pi pi-plus" severity="success" class="mr-2" (onClick)="openNew()" />            
+                @if(canCreate()){
+                    <p-button label="Nuevo Metodo de Pago" icon="pi pi-plus" severity="success" class="mr-2" (onClick)="openNew()" />       
+                }                  
             </ng-template>
         </p-toolbar>
 
@@ -36,8 +38,7 @@
                 </div>
             </ng-template>
             <ng-template #header>
-                <tr>          
-               <!--      <th style="min-width: 16rem">Code</th> -->
+                <tr> 
                     <th pSortableColumn="name" style="min-width:16rem">
                         Nombre
                         <p-sortIcon field="name" />
@@ -50,8 +51,7 @@
                 </tr>
             </ng-template>
             <ng-template #body let-paymentMethod>
-                <tr>    
-             <!--        <td style="min-width: 12rem">{{ product.code }}</td> -->
+                <tr>           
                     <td style="min-width: 16rem">{{ paymentMethod.name }}</td>
                     <td>
                           <p-tag
@@ -60,7 +60,10 @@
                             ></p-tag>
                     </td>
                     <td>
-                        <p-button icon="pi pi-pencil" label="Editar" class="mr-2" [rounded]="true" [outlined]="true" (click)="edit(paymentMethod)" />
+                        @if(canUpdate()) {
+                            <p-button icon="pi pi-pencil" label="Editar" class="mr-2" [rounded]="true" [outlined]="true" (click)="edit(paymentMethod)" />
+                        }
+                    
                         @if (canDelete()) {
                               <p-button  icon="pi pi-trash" label="Eliminar" severity="danger" [rounded]="true" [outlined]="true" (click)="remove(paymentMethod)" />
                         }
@@ -68,15 +71,27 @@
                     </td>
                 </tr>
             </ng-template>
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="3" class="!text-center py-6 text-gray-500">
+                        <i class="pi pi-info-circle mr-2"></i>
+                         <span class="font-semibold">No se encontraron registros</span>
+                    </td>
+                </tr>
+            </ng-template>
         </p-table>
 
-        <p-dialog [(visible)]="dialogVisible" [style]="{ width: '450px' }" header="Metodo de Pago" [modal]="true">
+        <p-dialog [(visible)]="dialogVisible" [style]="{ width: '450px' }"   
+            [header]="dialogMode === 'create' ? 'Nuevo Método de Pago' : 'Editar Método de Pago'" 
+            [modal]="true">
             <ng-template #content>
                 <div class="flex flex-col gap-6">            
                     <div>
                         <label for="name" class="block font-bold mb-3">Nombre</label>
-                        <input type="text" pInputText id="name" [(ngModel)]="paymentMethod.name" required autofocus fluid />
-                        <small class="text-red-500" *ngIf="submitted && !paymentMethod.name">Name is required.</small>
+                        <input type="text" pInputText id="name" [(ngModel)]="paymentMethod.name"  
+                 
+                        required autofocus fluid />
+                       <small class="text-red-500" *ngIf="submitted && backendErrors['name']">{{ backendErrors['name'] }}                       </small>
                     </div> 
                     <div class="font-bold mb-3">Estado</div>
                     <div class="flex flex-col md:flex-row gap-4">

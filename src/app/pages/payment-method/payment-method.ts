@@ -19,7 +19,6 @@ import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { BreadcrumbModule } from 'primeng/breadcrumb';
-import { Product, ProductService } from '../../core/models/productos-service-prueba';
 import { PaymentMethodRequest } from '../../core/models/paymentmethod-Request';
 import { PaymentMethod } from '../../core/services/payment-method/payment-method';
 import { Auth } from '../../core/services/auth/auth';
@@ -49,17 +48,16 @@ import { Auth } from '../../core/services/auth/auth';
   ],
   templateUrl: './payment-method.html',
   styleUrl: './payment-method.scss',
-  providers: [MessageService, ProductService, ConfirmationService]
+  providers: [ PaymentMethod, ConfirmationService]
 })
 
 
 export class PaymentMethodComponent {
     
-    ngOnInit(){
+    ngOnInit(){ 
         if(this.auth.token){
             this.auth.refreshPermissions().subscribe({
-                next: () => {
-                    debugger;    
+                next: () => {                      
                     if(this.dt){
                         this.dt.reset();
                     }
@@ -88,7 +86,13 @@ export class PaymentMethodComponent {
 
     dialogVisible = false;
     submitted = false;
+
+    dialogMode: 'create' | 'edit' = 'create';
+
+    backendErrors: { [key: string]: string } = {};
     
+    canCreateSignal = signal(false);
+    canUpdateSignal = signal(false);
     canDeleteSignal = signal(false);
 
     constructor(
@@ -100,21 +104,24 @@ export class PaymentMethodComponent {
         effect(() => {
             const user = this.auth.userSignal();
             if (!user?.menus) {
+                this.canCreateSignal.set(false);
+                this.canUpdateSignal.set(false);
                 this.canDeleteSignal.set(false);
                 return;
-            }
-            debugger;
+            }          
             const menu = findMenuByLink(user.menus, '/MetodoPago');
+            this.canCreateSignal.set(!!menu?.canCreate);
+            this.canUpdateSignal.set(!!menu?.canUpdate);
             this.canDeleteSignal.set(!!menu?.canDelete);
         });
     }
 
     canCreate(): boolean {
-        return this.hasPermission('MetodoPago', 'canCreate');
+        return this.canCreateSignal();
     }
 
     canUpdate(): boolean {
-        return this.hasPermission('MetodoPago', 'canUpdate');
+        return this.canUpdateSignal();
     }
 
     canDelete(): boolean {        
@@ -133,88 +140,120 @@ export class PaymentMethodComponent {
     
     load(event: TableLazyLoadEvent) {
 
-    this.loading = true;
+        this.loading = true;
 
-    const page = (event.first ?? 0) / (event.rows ?? 10);
-    const size = event.rows ?? 10;
-    const sortFieldRaw = event.sortField ?? 'name'
-    const sortField = Array.isArray(sortFieldRaw) ? sortFieldRaw[0] : sortFieldRaw;
-    const sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
-    const globalFilter = event.globalFilter as string;
+        const page = (event.first ?? 0) / (event.rows ?? 10);
+        const size = event.rows ?? 10;
+        const sortFieldRaw = event.sortField ?? 'name'
+        const sortField = Array.isArray(sortFieldRaw) ? sortFieldRaw[0] : sortFieldRaw;
+        const sortOrder = event.sortOrder === 1 ? 'asc' : 'desc';
+        const globalFilter = this.globalFilter;
 
-    this.service
-      .getAll(page, size, sortField, sortOrder, globalFilter)
-      .subscribe({
-        next: (res) => {
-          this.paymentMethods.set(res.data.content);
-          this.totalRecords = res.data.totalElements;
-          this.loading = false;
-        },
-        error: () => {
-          this.loading = false;
-        }
-      });
+        this.service
+        .getAll(page, size, sortField, sortOrder, globalFilter)
+        .subscribe({
+            next: (res) => {
+            this.paymentMethods.set(res.data.content);
+            this.totalRecords = res.data.totalElements;
+            this.loading = false;
+            },
+            error: () => {
+            this.loading = false;
+            }
+        });
 
     }
     onSearch(event: Event) {
         this.globalFilter = (event.target as HTMLInputElement).value;
-        this.dt.reset(); // vuelve a cargar desde backend
+        this.dt.reset(); 
     }
     openNew() {
+         this.dialogMode = 'create';
         this.paymentMethod = { name: '', status: true };
-        this.submitted = false;
+        this.submitted = false;    
+         this.backendErrors = {};
         this.dialogVisible = true;
     }
 
-    save() {
-        this.submitted = true;
-        if (!this.paymentMethod.name?.trim()) return;
-
-        this.service.create(this.paymentMethod).subscribe(() => {
-        this.dialogVisible = false;
-        this.dt.reset();
-        this.toast('Creado correctamente');
-        });
-    }
  
     edit(pm: PaymentMethodRequest) {
+        this.dialogMode = 'edit'; 
+         this.backendErrors = {};
         this.paymentMethod = { ...pm };
         this.dialogVisible = true;
     }
 
-    update() {       
-        this.service.update(this.paymentMethod.id!, this.paymentMethod).subscribe(() => {
-        this.dialogVisible = false;
-        this.dt.reset();
-        this.toast('Actualizado correctamente');
+    update() {      
+    /*     if (!this.paymentMethod.name?.trim()) return; */
+        this.submitted = true;  
+        this.service.update(this.paymentMethod.id!,this.paymentMethod).subscribe({
+            next: (res) => {
+                this.dialogVisible = false;   
+                this.dt.reset();             
+                this.toast(res.mensaje || 'Actualizado correctamente','success');
+               
+            },
+            error: (err) =>{
+                if(err.status === 400){                 
+                 this.backendErrors = err.error?.errores || {};             
+                }
+                else if (err.status === 403) {
+                this.toast('No tienes permisos para crear', 'error');
+                }
+                else {
+                    this.toast('Ocurrió un error al crear', 'error');
+                }
+            }
         });
     }
 
-
-remove(pm: PaymentMethodRequest) {
-    this.confirmationService.confirm({
-        message: `¿Eliminar "${pm.name}"?`,
-        accept: () => {
-            this.service.delete(pm.id!).subscribe({
-                next: () => {                    
-                    this.dt.reset();
-                    this.toast('Eliminado correctamente', 'success');
-                },
-                error: (err) => {                                 
-                    if (err.status === 403) {
-                        this.toast('No tienes permisos para eliminar este método de pago', 'error');
-                    }                     
-                    else if (err.status === 404) {
-                        this.toast('Registro no encontrado', 'warn');
-                    } 
-                    else {
-                        this.toast('Ocurrió un error al eliminar', 'error');
-                    }
+    save() {
+        this.submitted = true;    
+       /*  if (!this.paymentMethod.name?.trim()) return;   */
+        this.service.create(this.paymentMethod).subscribe({
+            next: (res) =>{  
+                this.dialogVisible=false;  
+                this.dt.reset();  
+                this.toast(res.mensaje || 'Creado correctamente','success');   
+            },
+            error: (err) => {
+                if(err.status === 400 ){
+                    this.backendErrors = err.error?.errores || {}; 
                 }
-            });
-        }
-    });
-}
+                else if (err.status === 403) {
+                this.toast('No tienes permisos para crear', 'error');
+                }
+                else {
+                    this.toast('Ocurrió un error al crear', 'error');
+                }
+            },
+        });   
+    }
+
+    remove(pm: PaymentMethodRequest) {
+        this.confirmationService.confirm({
+            message: `¿Eliminar "${pm.name}"?`,
+            accept: () => {
+                this.service.delete(pm.id!).subscribe({
+                    next: (res) => {       
+                        this.dt.reset();
+                        this.toast(res.mensaje || 'Eliminado correctamente', 'success');                 
+                    },
+                    error: (err) => {                                 
+                        if (err.status === 403) {
+                            this.toast('No tienes permisos para eliminar este método de pago', 'error');
+                        }                     
+                        else if (err.status === 404) {
+                            this.toast('Registro no encontrado', 'warn');
+                        } 
+                        else {
+                            this.toast('Ocurrió un error al eliminar', 'error');
+                        }
+                    }
+                });
+            }
+        });
+    }
 
     toast(detail: string, severity: 'success' | 'error' | 'warn' = 'success') {
         this.messageService.add({

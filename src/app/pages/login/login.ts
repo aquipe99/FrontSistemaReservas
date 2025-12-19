@@ -30,8 +30,7 @@ export class Login {
 
   constructor( private auth: Auth,private router: Router  ) {}
 
-  clearError(field: string) {
-    // cuando el usuario escribe, desaparece el mensaje
+  clearError(field: string) {  
     this.errors[field] = null;
     this.errors.general = null;
   }
@@ -40,10 +39,10 @@ export class Login {
 
      this.errors = { email: null, password: null, general: null };
 
-    if (!this.email) this.errors.email = 'El email' ;
-    if (!this.password) this.errors.password = 'La contraseña ';
+    if (!this.email) this.errors.email = 'El email es requerido' ;
+    if (!this.password) this.errors.password = 'La contraseña es requerida ';
 
-      if (this.errors.email || this.errors.password) {
+    if (this.errors.email || this.errors.password) {
       return;
     }
     const payload: LoginRequest = {
@@ -58,11 +57,10 @@ export class Login {
         this.router.navigate(['/inicio']);
       },
       error: (err) => {
-      console.log("Error backend:", err);
 
-        if (err.error?.codigo === 400 && err.error.data) {
-          this.errors.email = err.error.data.email || null;
-          this.errors.password = err.error.data.password || null;
+        if (err.error?.codigo === 400 && err.error.errores) {
+          this.errors.email = err.error.errores.email || null;
+          this.errors.password = err.error.errores.password || null;
         }      
         if (err.error?.codigo === 401) {
           this.errors.general = err.error.mensaje;

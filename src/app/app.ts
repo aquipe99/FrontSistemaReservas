@@ -19,7 +19,7 @@ export class App {
        
         next: (res) => {  
              
-          console.log('Permisos actualizados', res);
+          //console.log('Permisos actualizados', res);
         },
         error: (err) => {
           //console.warn('No se pudieron actualizar los permisos', err);
