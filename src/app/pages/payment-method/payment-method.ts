@@ -19,7 +19,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { BreadcrumbModule } from 'primeng/breadcrumb';
-import { PaymentMethodRequest } from '../../core/models/paymentmethod-Request';
+import { PaymentMethodRequest } from '../../core/models/paymentmethod-request';
 import { PaymentMethod } from '../../core/services/payment-method/payment-method';
 import { Auth } from '../../core/services/auth/auth';
 
@@ -128,7 +128,7 @@ export class PaymentMethodComponent {
         return this.canDeleteSignal();  
     }
 
-    private hasPermission(
+    private  (
     routePath: string,
     permission: 'canRead' | 'canCreate' | 'canUpdate' | 'canDelete'
     ): boolean {

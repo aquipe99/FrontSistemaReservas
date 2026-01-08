@@ -13,7 +13,8 @@ export const routes: Routes = [
     },
     {
       path: '',
-      canActivate: [authGuard,permissionGuard],
+      canActivate: [authGuard], 
+      canActivateChild:[permissionGuard],
       data: { routePath: 'MetodoPago', permission: 'canRead' },
       loadComponent: () =>
         import('./layout/component/app.layout').then(m => m.AppLayout),
@@ -25,12 +26,24 @@ export const routes: Routes = [
         },
         {
           path: 'MetodoPago',
+          data: { routePath: 'MetodoPago', permission: 'canRead' },
           loadComponent: () =>
             import('./pages/payment-method/payment-method').then(m => m.PaymentMethodComponent)
         },
-        
+        {
+          path: 'Cancha',
+          data: { routePath: 'Cancha', permission: 'canRead' },
+          loadComponent: () =>
+             import('./pages/court/court').then(m => m.CourtComponent)
+        },
+        {
+          path: 'unauthorized',
+         loadComponent: () =>
+              import('./pages/unauthorized/unauthorized')
+          .then(m => m.Unauthorized)
+        },
       ]
-    },
+    }, 
     {
       path: 'unauthorized',    
       loadComponent: () =>

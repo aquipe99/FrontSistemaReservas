@@ -4,7 +4,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '../../models/api-response';
 import { PageResponse } from '../../models/page-response';
-import { PaymentMethodRequest } from '../../models/paymentmethod-Request';
+import { PaymentMethodRequest } from '../../models/paymentmethod-request';
 @Injectable({
   providedIn: 'root',
 })

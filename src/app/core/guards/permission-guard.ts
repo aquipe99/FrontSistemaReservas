@@ -8,6 +8,10 @@ export const permissionGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
   const user = auth.user;
 
+  if (route.routeConfig?.path === 'unauthorized') {
+    return true;
+  }
+
   if (!user || !user.menus) {
     router.navigate(['/login']);
     return false;
